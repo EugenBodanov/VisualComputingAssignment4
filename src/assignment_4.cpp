@@ -19,9 +19,9 @@ enum eCameraFollow
 /* enum for different render modes */
 enum eRenderMode
 {
-    COLOR = 0,  // render diffuse colors
-    NORMAL,     // render normals
-    MODE_COUNT
+    COLOR = 0,   // render diffuse colors
+    NORMAL,      // render normals
+    MODE_COUNT,
 };
 
 /* plane light directions */
@@ -61,6 +61,8 @@ struct
     /* shader */
     ShaderProgram shaderColor;
     ShaderProgram shaderNormal;
+    ShaderProgram shaderFlagColor; // TODO: Add shaders for rendering the Flag
+    ShaderProgram shaderFlagNormal;
     eRenderMode renderMode;
 } sScene;
 
@@ -207,6 +209,8 @@ void sceneInit(float width, float height)
     /* load shader from file */
     sScene.shaderColor = shaderLoad("shader/default.vert", "shader/color.frag");
     sScene.shaderNormal = shaderLoad("shader/default.vert", "shader/normal.frag");
+    sScene.shaderFlagColor = shaderLoad("shader/flag.vert", "shader/color.frag");
+    sScene.shaderFlagNormal = shaderLoad("shader/flag.vert", "shader/normal.frag");
 
     sScene.renderMode = eRenderMode::COLOR;
 }
@@ -235,13 +239,9 @@ void sceneUpdate(float dt)
     }
 }
 
-/* 
- * function to render all objects in the scene using their diffuse colors or their normals
- * (depending on shader program and renderNormal flag)
- */
-void renderColor(ShaderProgram& shader, bool renderNormal) {
+void renderPlanetAndPlane(ShaderProgram& shader, bool renderNormal) {
     /* setup camera and model matrices */
-    Matrix4D proj = cameraProjection(sScene.camera);
+    Matrix4D proj = cameraProjection(sScene.camera); // perspective projection (3D -> 2D coordinates on the screen)
     Matrix4D view = cameraView(sScene.camera);
 
     glUseProgram(shader.id);
@@ -255,7 +255,7 @@ void renderColor(ShaderProgram& shader, bool renderNormal) {
     }
 
     /* render plane */
-    for(unsigned int i = 0; i < sScene.plane.partModel.size(); i++)
+    for (unsigned int i = 0; i < sScene.plane.partModel.size(); i++)
     {
         auto& model = sScene.plane.partModel[i];
         auto& transform = sScene.plane.partTransformations[i];
@@ -293,17 +293,52 @@ void renderColor(ShaderProgram& shader, bool renderNormal) {
         }
     }
 
+    /* cleanup opengl state */
+    glBindVertexArray(0);
+    glUseProgram(0);
+}
+
+void renderFlag(ShaderProgram& shader, bool renderNormal) {
+
+    /* setup camera and model matrices */
+    Matrix4D proj = cameraProjection(sScene.camera); // perspective projection (3D -> 2D coordinates on the screen)
+    Matrix4D view = cameraView(sScene.camera);
+
+    glUseProgram(shader.id);
+    shaderUniform(shader, "uProj",  proj);
+    shaderUniform(shader, "uView",  view);
+    shaderUniform(shader, "uModel",  sScene.plane.transformation);
+    if (renderNormal)
+    {
+        shaderUniform(shader, "uViewPos", cameraPosition(sScene.camera));
+        shaderUniform(shader, "isFlag", false);
+    }
+
     /* render flag */
     {
         auto& model = sScene.plane.flag.model;
+        // uModel: Transforms local vertices to world space coordinates!
         shaderUniform(shader, "uModel", sScene.plane.transformation * sScene.plane.flagModelMatrix * sScene.plane.flagNegativeRotation);
         glBindVertexArray(model.mesh.vao);
+
+        // TODO: Pass the wave parameter and time as uniforms to the shader for displacement calculations
+        for (int i = 0; i < 3; i++) {
+            shaderUniform(shader, "amplitudes[" + std::to_string(i) + "]", sScene.plane.flagSim.parameter[i].amplitude);
+            shaderUniform(shader, "phases[" + std::to_string(i) + "]", sScene.plane.flagSim.parameter[i].phi);
+            shaderUniform(shader, "frequencies[" + std::to_string(i) + "]", sScene.plane.flagSim.parameter[i].omega);
+            shaderUniform(shader, "directions[" + std::to_string(i) + "]", sScene.plane.flagSim.parameter[i].direction);
+        }
+        shaderUniform(shader, "zPosMin", sScene.plane.flag.minPosZ);
+        shaderUniform(shader, "accumTime", sScene.plane.flagSim.accumTime);
+
         for(auto& material : model.material)
         {
             if (!renderNormal)
             {
                 /* set material properties */
                 shaderUniform(shader, "uMaterial.diffuse", material.diffuse);
+                // TODO: Add the wave parameters as uniforms (they act as constants within a draw call)
+                // shaderUniform()sScene.plane.flag.vertices
             }
             else
             {
@@ -318,6 +353,22 @@ void renderColor(ShaderProgram& shader, bool renderNormal) {
     glUseProgram(0);
 }
 
+/* Function to set correct shader programs for the different rendering settings */
+void renderColor(bool renderNormal) {
+    ShaderProgram shaderScene;
+    ShaderProgram shaderFlag;
+    if (renderNormal) {
+        shaderScene = sScene.shaderNormal;
+        shaderFlag = sScene.shaderFlagNormal;
+    } else {
+        shaderScene = sScene.shaderColor;
+        shaderFlag = sScene.shaderFlagColor;
+    }
+
+    renderPlanetAndPlane(shaderScene, renderNormal);
+    renderFlag(shaderFlag, renderNormal);
+}
+
 /* function to draw all objects in the scene */
 void sceneDraw()
 {
@@ -329,11 +380,11 @@ void sceneDraw()
     {
         if (sScene.renderMode == eRenderMode::COLOR)
         {
-            renderColor(sScene.shaderColor, false);
+            renderColor(false); // Changed the renderColor function prototype so that flag can be created with an individual vertex shader!
         }
         else if (sScene.renderMode == eRenderMode::NORMAL)
         {
-            renderColor(sScene.shaderNormal, true);
+            renderColor(true);
         }
     }
     glCheckError();
