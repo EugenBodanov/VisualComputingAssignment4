@@ -35,7 +35,7 @@ Flag flagCreate(const std::string& flagFilePath)
      *
      * TODO - Remove this part if flag animation in shader implemented
      */
-    flag.vertices = verticesLoad(flagFilePath);
+    // flag.vertices = verticesLoad(flagFilePath);
 
     return flag;
 }
