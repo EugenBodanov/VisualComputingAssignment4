@@ -30,11 +30,11 @@ Flag flagCreate(const std::string& flagFilePath)
     flag.model = models[0];
     flag.minPosZ = -8.0f;
 
-    /* 
+    /*
      * Load vertices for flag, not required in implementation of shader based animation
      *
      * TODO - Remove this part if flag animation in shader implemented
-     */
+     * */
     // flag.vertices = verticesLoad(flagFilePath);
 
     return flag;
