@@ -88,6 +88,22 @@ struct
     bool keyPressed[Plane::eControl::CONTROL_COUNT] = {false, false, false, false};
 } sInput;
 
+// Light Data
+struct PointLight{
+    Vector3D position;
+    Vector3D color;
+    float intensity; // Base intencity of the light
+    // formula = intencity / (constant + linear * d + quadratic * d^2); d->distance 
+    float constant; // light near the source
+    float linear; // luminous intensity decreases when distance increases
+    float quadratic; // in the real world, luminous intensity decreases quadratic to the distance
+
+    bool isStrobe; // light blinks or not
+    float strobeInterval; // how often light blinks
+};
+
+std::vector <PointLight> planeLights;
+
 /* GLFW callback function for keyboard events */
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
@@ -249,6 +265,44 @@ void sceneInit(float width, float height)
     sScene.shaderFlagNormal = shaderLoad("shader/flag.vert", "shader/normal.frag");
 
     sScene.renderMode = eRenderMode::COLOR;
+
+    // Light init
+
+    // red = {1,0,0}, green = {0,1,0}, white = {1,1,1}
+
+    float constant = 1.0f;
+    float linear = 0.09f;
+    float quadratic = 0.01f;
+
+    planeLights.push_back({ planeLightPositions[0], {1,0,0}, 1.0f, constant, linear, quadratic, false, 0.0f});
+    planeLights.push_back({ planeLightPositions[1], {1,1,1}, 1.0f, constant, linear, quadratic, true, 0.5f });
+    planeLights.push_back({ planeLightPositions[2], {0,1,0}, 1.0f, constant, linear, quadratic, false, 0.0f });
+    planeLights.push_back({ planeLightPositions[3], {1,1,1}, 1.0f, constant, linear, quadratic, true, 0.5f });
+    planeLights.push_back({ planeLightPositions[4], {1,1,1}, 1.0f, constant, linear, quadratic, false, 0.0f });
+    planeLights.push_back({ planeLightPositions[5], {1,0,0}, 1.0f, constant, linear, quadratic, true, 0.5f });
+}
+
+void lightsUpdate(float dt){
+    // Update the position
+    for (int i = 0; i < planeLights.size(); ++i) {
+        Vector4D localPos = Vector4D(planeLightPositions[i].x, planeLightPositions[i].y, planeLightPositions[i].z, 1.0f);
+        Vector4D worldPos = sScene.plane.transformation * localPos;
+        planeLights[i].position = Vector3D(worldPos.x, worldPos.y, worldPos.z);
+    }
+
+    // Update blinking
+    static float accumTime = 0.0f;
+    accumTime += dt;
+    for (auto &light : planeLights) {
+        if (light.isStrobe) {
+            float phase = fmod(accumTime, light.strobeInterval * 2.0f);
+            if (phase < light.strobeInterval) {
+                light.intensity = 1.0f;
+            } else {
+                light.intensity = 0.0f;
+            }
+        }
+    }
 }
 
 /* function to move and update objects in scene (e.g., rotate cube according to user input) */
@@ -256,6 +310,8 @@ void sceneUpdate(float dt)
 {
     planeMove(sScene.plane, sInput.keyPressed, dt);
     planetRotate(sScene.planet, getPlaneTurningVector(sScene.plane), sScene.plane.speed, dt);
+
+    lightsUpdate(dt);
 
     if (sScene.cameraFollow == eCameraFollow::PLANE)
     {
@@ -460,8 +516,36 @@ void renderColor(bool renderNormal) {
         shaderFlag = sScene.shaderFlagColor;
     }
 
+    glUseProgram(shaderScene.id);
+    // Give data about lights
+    shaderUniform(shaderScene, "numLights", (int)planeLights.size());
+    for (int i = 0; i < (int)planeLights.size(); ++i) {
+        std::string base = "lights[" + std::to_string(i) + "]";
+        shaderUniform(shaderScene, (base + ".position").c_str(), planeLights[i].position);
+        shaderUniform(shaderScene, (base + ".color").c_str(), planeLights[i].color);
+        shaderUniform(shaderScene, (base + ".intensity").c_str(), planeLights[i].intensity);
+        shaderUniform(shaderScene, (base + ".constant").c_str(), planeLights[i].constant);
+        shaderUniform(shaderScene, (base + ".linear").c_str(), planeLights[i].linear);
+        shaderUniform(shaderScene, (base + ".quadratic").c_str(), planeLights[i].quadratic);
+    }
+
     renderPlanetAndPlane(shaderScene, renderNormal);
+
+    glUseProgram(shaderFlag.id);
+    shaderUniform(shaderFlag, "numLights", (int)planeLights.size());
+    for (int i = 0; i < (int)planeLights.size(); ++i) {
+        std::string base = "lights[" + std::to_string(i) + "]";
+        shaderUniform(shaderFlag, (base + ".position").c_str(), planeLights[i].position);
+        shaderUniform(shaderFlag, (base + ".color").c_str(), planeLights[i].color);
+        shaderUniform(shaderFlag, (base + ".intensity").c_str(), planeLights[i].intensity);
+        shaderUniform(shaderFlag, (base + ".constant").c_str(), planeLights[i].constant);
+        shaderUniform(shaderFlag, (base + ".linear").c_str(), planeLights[i].linear);
+        shaderUniform(shaderFlag, (base + ".quadratic").c_str(), planeLights[i].quadratic);
+    }
+
     renderFlag(shaderFlag, renderNormal);
+
+    glUseProgram(0);
 }
 
 /* function to draw all objects in the scene */
