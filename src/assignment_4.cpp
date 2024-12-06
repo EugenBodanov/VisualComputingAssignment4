@@ -44,6 +44,16 @@ const std::vector<Vector3D> planeLightPositions = {
     { 0.0f,    1.4022f, -3.5f  }   // rudder, red strobe
 };
 
+struct SceneLight
+{
+    Vector3D lightPos;
+    Vector3D globalAmbientLightColor;
+    Vector3D lightColor;
+    float ka;                       // ambient coefficient  [0, 1]
+    float kd;                       // diffuse coefficient  [0, 1]
+    float ks;                       // specular coefficient [0, 1]
+};
+
 /* struct holding all necessary state variables of the scene */
 struct
 {
@@ -64,6 +74,10 @@ struct
     ShaderProgram shaderFlagColor; // TODO: Add shaders for rendering the Flag
     ShaderProgram shaderFlagNormal;
     eRenderMode renderMode;
+
+    bool isDay;
+    SceneLight dayLight;
+    SceneLight nightLight;
 } sScene;
 
 /* struct holding all state variables for input */
@@ -153,6 +167,11 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods
     {
         sScene.renderMode = static_cast<eRenderMode>((static_cast<int>(sScene.renderMode) + 1) % eRenderMode::MODE_COUNT);
     }
+
+    /* toggle between day and night time lighting; M for Mode */
+    if (key == GLFW_KEY_M && action == GLFW_PRESS) {
+        sScene.isDay = !sScene.isDay;
+    }
 }
 
 /* GLFW callback function for mouse position events */
@@ -206,6 +225,23 @@ void sceneInit(float width, float height)
     sScene.plane = planeLoad("assets/plane/cartoon-plane.obj", "assets/plane/flag_uibk.obj");
     sScene.planet = planetLoad("assets/planet/cute-little-planet.obj");
 
+    /* TODO: Create a light source for day and night */
+    sScene.isDay = true;
+
+    sScene.dayLight.lightColor = Vector3D(182.0f,126.0f,91.0f);
+    sScene.dayLight.lightPos = Vector3D(80.0f, 100.0f, 50.0f);
+    sScene.dayLight.globalAmbientLightColor = Vector3D(0.0f, 0.0f, 0.0f);
+    sScene.dayLight.ka = 0.1f;
+    sScene.dayLight.kd = 1.0f;
+    sScene.dayLight.ks = 0.6f;
+
+    sScene.nightLight.lightColor = Vector3D(1.0f, 0.0f, 0.0f);
+    sScene.nightLight.lightPos = Vector3D(80.0f, 100.0f, 50.0f);
+    sScene.nightLight.globalAmbientLightColor = Vector3D(1.0f, 1.0f, 1.0f);
+    sScene.nightLight.ka = 0.2f;
+    sScene.nightLight.kd = 0.5f;
+    sScene.nightLight.ks = 0.1f;
+
     /* load shader from file */
     sScene.shaderColor = shaderLoad("shader/default.vert", "shader/color.frag");
     sScene.shaderNormal = shaderLoad("shader/default.vert", "shader/normal.frag");
@@ -245,9 +281,12 @@ void renderPlanetAndPlane(ShaderProgram& shader, bool renderNormal) {
     Matrix4D view = cameraView(sScene.camera);
 
     glUseProgram(shader.id);
+    // TODO: Add rendering night/day mode, i.e. different lightColor. Also light Position is always rotating!
     shaderUniform(shader, "uProj",  proj);
     shaderUniform(shader, "uView",  view);
     shaderUniform(shader, "uModel",  sScene.plane.transformation);
+    shaderUniform(shader, "uCameraPos", sScene.camera.position);
+
     if (renderNormal)
     {
         shaderUniform(shader, "uViewPos", cameraPosition(sScene.camera));
@@ -263,31 +302,69 @@ void renderPlanetAndPlane(ShaderProgram& shader, bool renderNormal) {
 
         shaderUniform(shader, "uModel", sScene.plane.transformation * transform);
 
+        if (sScene.isDay) {
+            shaderUniform(shader, "uLight.globalAmbientLightColor", sScene.dayLight.globalAmbientLightColor);
+            shaderUniform(shader, "uLight.lightColor", sScene.dayLight.lightColor);
+            shaderUniform(shader, "uLight.lightPos", sScene.dayLight.lightPos);
+            shaderUniform(shader, "uLight.ka", sScene.dayLight.ka);
+            shaderUniform(shader, "uLight.kd", sScene.dayLight.kd);
+            shaderUniform(shader, "uLight.ks", sScene.dayLight.ks);
+        } else {
+            shaderUniform(shader, "uLight.globalAmbientLightColor", sScene.nightLight.globalAmbientLightColor);
+            shaderUniform(shader, "uLight.lightColor", sScene.nightLight.lightColor);
+            shaderUniform(shader, "uLight.lightPos", sScene.nightLight.lightPos);
+            shaderUniform(shader, "uLight.ka", sScene.nightLight.ka);
+            shaderUniform(shader, "uLight.kd", sScene.nightLight.kd);
+            shaderUniform(shader, "uLight.ks", sScene.nightLight.ks);
+        }
+
+
         for(auto& material : model.material)
         {
             if (!renderNormal)
             {
                 /* set material properties */
+                shaderUniform(shader, "uMaterial.ambient", material.ambient);
                 shaderUniform(shader, "uMaterial.diffuse", material.diffuse);
+                shaderUniform(shader, "uMaterial.specular", material.specular);
+                shaderUniform(shader, "uMaterial.shininess", material.shininess);
             }
             glDrawElements(GL_TRIANGLES, material.indexCount, GL_UNSIGNED_INT, (const void*) (material.indexOffset*sizeof(unsigned int)) );
         }
     }
 
     /* render planet */
-    for(unsigned int i=0; i < sScene.planet.partModel.size(); i++)
+    for (unsigned int i=0; i < sScene.planet.partModel.size(); i++)
     {
         auto& model = sScene.planet.partModel[i];
         glBindVertexArray(model.mesh.vao);
 
         shaderUniform(shader, "uModel", sScene.planet.transformation);
+        if (sScene.isDay) {
+            shaderUniform(shader, "uLight.globalAmbientLightColor", sScene.dayLight.globalAmbientLightColor);
+            shaderUniform(shader, "uLight.lightColor", sScene.dayLight.lightColor);
+            shaderUniform(shader, "uLight.lightPos", sScene.dayLight.lightPos);
+            shaderUniform(shader, "uLight.ka", sScene.dayLight.ka);
+            shaderUniform(shader, "uLight.kd", sScene.dayLight.kd);
+            shaderUniform(shader, "uLight.ks", sScene.dayLight.ks);
+        } else {
+            shaderUniform(shader, "uLight.globalAmbientLightColor", sScene.nightLight.globalAmbientLightColor);
+            shaderUniform(shader, "uLight.lightColor", sScene.nightLight.lightColor);
+            shaderUniform(shader, "uLight.lightPos", sScene.nightLight.lightPos);
+            shaderUniform(shader, "uLight.ka", sScene.nightLight.ka);
+            shaderUniform(shader, "uLight.kd", sScene.nightLight.kd);
+            shaderUniform(shader, "uLight.ks", sScene.nightLight.ks);
+        }
 
         for(auto& material : model.material)
         {
             if (!renderNormal)
             {
                 /* set material properties */
+                shaderUniform(shader, "uMaterial.ambient", material.ambient);
                 shaderUniform(shader, "uMaterial.diffuse", material.diffuse);
+                shaderUniform(shader, "uMaterial.specular", material.specular);
+                shaderUniform(shader, "uMaterial.shininess", material.shininess);
             }
             glDrawElements(GL_TRIANGLES, material.indexCount, GL_UNSIGNED_INT, (const void*) (material.indexOffset*sizeof(unsigned int)) );
         }
@@ -308,6 +385,8 @@ void renderFlag(ShaderProgram& shader, bool renderNormal) {
     shaderUniform(shader, "uProj",  proj);
     shaderUniform(shader, "uView",  view);
     shaderUniform(shader, "uModel",  sScene.plane.transformation);
+    shaderUniform(shader, "uCameraPos", sScene.camera.position);
+
     if (renderNormal)
     {
         shaderUniform(shader, "uViewPos", cameraPosition(sScene.camera));
@@ -319,9 +398,23 @@ void renderFlag(ShaderProgram& shader, bool renderNormal) {
         auto& model = sScene.plane.flag.model;
         // uModel: Transforms local vertices to world space coordinates!
         shaderUniform(shader, "uModel", sScene.plane.transformation * sScene.plane.flagModelMatrix * sScene.plane.flagNegativeRotation);
+        if (sScene.isDay) {
+            shaderUniform(shader, "uLight.globalAmbientLightColor", sScene.dayLight.globalAmbientLightColor);
+            shaderUniform(shader, "uLight.lightColor", sScene.dayLight.lightColor);
+            shaderUniform(shader, "uLight.lightPos", sScene.dayLight.lightPos);
+            shaderUniform(shader, "uLight.ka", sScene.dayLight.ka);
+            shaderUniform(shader, "uLight.kd", sScene.dayLight.kd);
+            shaderUniform(shader, "uLight.ks", sScene.dayLight.ks);
+        } else {
+            shaderUniform(shader, "uLight.globalAmbientLightColor", sScene.nightLight.globalAmbientLightColor);
+            shaderUniform(shader, "uLight.lightColor", sScene.nightLight.lightColor);
+            shaderUniform(shader, "uLight.lightPos", sScene.nightLight.lightPos);
+            shaderUniform(shader, "uLight.ka", sScene.nightLight.ka);
+            shaderUniform(shader, "uLight.kd", sScene.nightLight.kd);
+            shaderUniform(shader, "uLight.ks", sScene.nightLight.ks);
+        }
         glBindVertexArray(model.mesh.vao);
 
-        // TODO: Pass the wave parameter and time as uniforms to the shader for displacement calculations
         for (int i = 0; i < 3; i++) {
             shaderUniform(shader, "amplitudes[" + std::to_string(i) + "]", sScene.plane.flagSim.parameter[i].amplitude);
             shaderUniform(shader, "phases[" + std::to_string(i) + "]", sScene.plane.flagSim.parameter[i].phi);
@@ -336,8 +429,10 @@ void renderFlag(ShaderProgram& shader, bool renderNormal) {
             if (!renderNormal)
             {
                 /* set material properties */
+                shaderUniform(shader, "uMaterial.ambient", material.ambient);
                 shaderUniform(shader, "uMaterial.diffuse", material.diffuse);
-                // TODO: Add the wave parameters as uniforms (they act as constants within a draw call)
+                shaderUniform(shader, "uMaterial.specular", material.specular);
+                shaderUniform(shader, "uMaterial.shininess", material.shininess);
                 // shaderUniform()sScene.plane.flag.vertices
             }
             else
@@ -373,7 +468,13 @@ void renderColor(bool renderNormal) {
 void sceneDraw()
 {
     /* clear framebuffer color */
-    glClearColor(135.0 / 255, 206.0 / 255, 235.0 / 255, 1.0);
+    if (sScene.isDay) {
+        /* Sets the background color of the view space */
+        glClearColor(135.0 / 255, 206.0 / 255, 235.0 / 255, 1.0);
+    } else {
+        glClearColor(90.0 / 255, 100.0 / 255, 140.0 / 255, 1.0);
+    }
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     /*------------ render scene -------------*/
@@ -444,6 +545,8 @@ int main(int argc, char **argv)
     /* delete opengl shader and buffers */
     shaderDelete(sScene.shaderColor);
     shaderDelete(sScene.shaderNormal);
+    shaderDelete(sScene.shaderFlagColor);
+    shaderDelete(sScene.shaderFlagNormal);
     planeDelete(sScene.plane);
     planetDelete(sScene.planet);
 

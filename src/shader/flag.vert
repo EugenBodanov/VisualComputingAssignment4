@@ -10,6 +10,7 @@ layout(location = 2) in vec2 aUV;
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProj;
+uniform vec3 uCameraPos;
 
 uniform float amplitudes[3];
 uniform float phases[3];      // == phi
@@ -20,6 +21,7 @@ uniform float accumTime; // is updated within the main program!
 
 out vec3 tNormal;
 out vec3 tFragPos;
+out vec3 tCameraPos;
 
 
 float getDisplacement(vec2 pos) {
@@ -66,5 +68,6 @@ void main(void)
     tFragPos = vec3(uModel * vec4(modifiedPos, 1.0));
 
     tNormal = normalize(mat3(transpose(inverse(uModel))) * normal);
+    tCameraPos = uCameraPos;
 }
 
