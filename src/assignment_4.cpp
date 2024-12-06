@@ -100,6 +100,9 @@ struct PointLight{
 
     bool isStrobe; // light blinks or not
     float strobeInterval; // how often light blinks
+
+    Vector3D direction; // Direction of the light
+    float angle; // angle for the light
 };
 
 std::vector <PointLight> planeLights;
@@ -274,12 +277,17 @@ void sceneInit(float width, float height)
     float linear = 0.09f;
     float quadratic = 0.01f;
 
-    planeLights.push_back({ planeLightPositions[0], {1,0,0}, 1.0f, constant, linear, quadratic, false, 0.0f});
-    planeLights.push_back({ planeLightPositions[1], {1,1,1}, 1.0f, constant, linear, quadratic, true, 0.5f });
-    planeLights.push_back({ planeLightPositions[2], {0,1,0}, 1.0f, constant, linear, quadratic, false, 0.0f });
-    planeLights.push_back({ planeLightPositions[3], {1,1,1}, 1.0f, constant, linear, quadratic, true, 0.5f });
-    planeLights.push_back({ planeLightPositions[4], {1,1,1}, 1.0f, constant, linear, quadratic, false, 0.0f });
-    planeLights.push_back({ planeLightPositions[5], {1,0,0}, 1.0f, constant, linear, quadratic, true, 0.5f });
+    // eluminate left
+    planeLights.push_back({ planeLightPositions[0], {1,0,0}, 1.0f, constant, linear, quadratic, false, 0.0f, {-1, 0, 0}, 3.14159f});
+    planeLights.push_back({ planeLightPositions[1], {1,1,1}, 1.0f, constant, linear, quadratic, true, 0.5f , {-1, 0, 0}, 1.58f});
+
+    // eluminate right
+    planeLights.push_back({ planeLightPositions[2], {0,1,0}, 1.0f, constant, linear, quadratic, false, 0.0f, {1, 0, 0}, 1.58f});
+    planeLights.push_back({ planeLightPositions[3], {1,1,1}, 1.0f, constant, linear, quadratic, true, 0.5f, {1, 0, 0}, 3.14159f});
+
+    // eluminate back
+    planeLights.push_back({ planeLightPositions[4], {1,1,1}, 1.0f, constant, linear, quadratic, false, 0.0f, {0, 0, 1}, 1.58f});
+    planeLights.push_back({ planeLightPositions[5], {1,0,0}, 1.0f, constant, linear, quadratic, true, 0.5f, {0, 0, 1}, 3.14159f});
 }
 
 void lightsUpdate(float dt){
@@ -527,6 +535,8 @@ void renderColor(bool renderNormal) {
         shaderUniform(shaderScene, (base + ".constant").c_str(), planeLights[i].constant);
         shaderUniform(shaderScene, (base + ".linear").c_str(), planeLights[i].linear);
         shaderUniform(shaderScene, (base + ".quadratic").c_str(), planeLights[i].quadratic);
+        shaderUniform(shaderScene, (base + ".direction").c_str(), planeLights[i].direction);
+        shaderUniform(shaderScene, (base + ".angle").c_str(), planeLights[i].angle);
     }
 
     renderPlanetAndPlane(shaderScene, renderNormal);
@@ -541,6 +551,8 @@ void renderColor(bool renderNormal) {
         shaderUniform(shaderFlag, (base + ".constant").c_str(), planeLights[i].constant);
         shaderUniform(shaderFlag, (base + ".linear").c_str(), planeLights[i].linear);
         shaderUniform(shaderFlag, (base + ".quadratic").c_str(), planeLights[i].quadratic);
+        shaderUniform(shaderFlag, (base + ".direction").c_str(), planeLights[i].direction);
+        shaderUniform(shaderFlag, (base + ".angle").c_str(), planeLights[i].angle);
     }
 
     renderFlag(shaderFlag, renderNormal);

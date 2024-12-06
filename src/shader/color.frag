@@ -28,6 +28,9 @@ struct PointLight {
     float constant;
     float linear;
     float quadratic;
+
+    vec3 direction;
+    float angle;
 };
 
 // Uniforms
@@ -74,14 +77,23 @@ void main(void)
     vec3 pointLightResult = vec3(0.0);
     for (int i = 0; i < numLights; i++)
     {
-        vec3 lightDir = normalize(lights[i].position - tFragPos);
-        float diff = max(dot(normal, lightDir), 0.0);
+        vec3 fragToLight = normalize(lights[i].position - tFragPos);
 
-        float distance = length(lights[i].position - tFragPos);
-        float attenuation = lights[i].intensity / (lights[i].constant + lights[i].linear * distance + lights[i].quadratic * distance * distance);
+        // Compute the cosine of the angle between the spotlight direction and the vector from the light to the fragment
+        float theta = dot(fragToLight, normalize(lights[i].direction));
+        float cosCutoff = cos(lights[i].angle);
 
-        vec3 diffuse = diff * lights[i].color * attenuation;
-        pointLightResult += diffuse * uMaterial.diffuse;
+        // Check if fragment is inside the spotlight cone
+        if (theta >= cosCutoff) {
+            // Fragment is inside the cone, calculate lighting as usual
+            float diff = max(dot(normal, fragToLight), 0.0);
+
+            float distance = length(lights[i].position - tFragPos);
+            float attenuation = lights[i].intensity / (lights[i].constant + lights[i].linear * distance + lights[i].quadratic * distance * distance);
+
+            vec3 diffuse = diff * lights[i].color * attenuation;
+            pointLightResult += diffuse * uMaterial.diffuse;
+        }
     }
 
     // Combine directional light and point lights results
