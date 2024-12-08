@@ -76,6 +76,8 @@ struct
     eRenderMode renderMode;
 
     bool isDay;
+    bool planeLightsOn;
+
     SceneLight dayLight;
     SceneLight nightLight;
 } sScene;
@@ -191,6 +193,13 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods
     if (key == GLFW_KEY_M && action == GLFW_PRESS) {
         sScene.isDay = !sScene.isDay;
     }
+
+    /* toggle plane light with 'L' */
+    if (key == GLFW_KEY_L && action == GLFW_PRESS)
+    {
+        sScene.planeLightsOn = !sScene.planeLightsOn;
+        setEmission(sScene.plane, sScene.planeLightsOn);
+    }
 }
 
 /* GLFW callback function for mouse position events */
@@ -241,8 +250,8 @@ void sceneInit(float width, float height)
     sScene.zoomSpeedMultiplier = 0.05f;
 
     /* setup objects in scene and create opengl buffers for meshes */
-    sScene.plane = planeLoad("assets/plane/cartoon-plane.obj", "assets/plane/flag_uibk.obj");
-    sScene.planet = planetLoad("assets/planet/cute-little-planet.obj");
+    sScene.plane = planeLoad("../assets/plane/cartoon-plane.obj", "../assets/plane/flag_uibk.obj");
+    sScene.planet = planetLoad("../assets/planet/cute-little-planet.obj");
 
     /* TODO: Create a light source for day and night */
     sScene.isDay = true;
@@ -337,6 +346,9 @@ void sceneUpdate(float dt)
         sScene.camera.lookAt = inverse(Matrix3D(sScene.planet.rotation)) * sScene.plane.position;
         setCameraRotation(sScene.camera, Matrix3D(sScene.planet.rotation));
     }
+
+    /* change emissions of planet */
+    setEmisson(sScene.planet, !sScene.isDay);
 }
 
 void renderPlanetAndPlane(ShaderProgram& shader, bool renderNormal) {
@@ -389,6 +401,8 @@ void renderPlanetAndPlane(ShaderProgram& shader, bool renderNormal) {
                 shaderUniform(shader, "uMaterial.diffuse", material.diffuse);
                 shaderUniform(shader, "uMaterial.specular", material.specular);
                 shaderUniform(shader, "uMaterial.shininess", material.shininess);
+                shaderUniform(shader, "uMaterial.emission", material.emission);
+
             }
             glDrawElements(GL_TRIANGLES, material.indexCount, GL_UNSIGNED_INT,
                 (const void*)(material.indexOffset * sizeof(unsigned int)));
@@ -408,6 +422,7 @@ void renderPlanetAndPlane(ShaderProgram& shader, bool renderNormal) {
                 shaderUniform(shader, "uMaterial.diffuse", material.diffuse);
                 shaderUniform(shader, "uMaterial.specular", material.specular);
                 shaderUniform(shader, "uMaterial.shininess", material.shininess);
+                shaderUniform(shader, "uMaterial.emission", material.emission);
             }
             glDrawElements(GL_TRIANGLES, material.indexCount, GL_UNSIGNED_INT,
                 (const void*)(material.indexOffset * sizeof(unsigned int)));

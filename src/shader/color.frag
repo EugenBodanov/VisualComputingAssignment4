@@ -5,6 +5,7 @@ struct Material
     vec3 diffuse;
     vec3 ambient;
     vec3 specular;
+    vec3 emission;
     float shininess;
 };
 
@@ -96,7 +97,7 @@ void main(void)
     }
 
     // Combine directional light and point lights results
-    vec3 finalColor = lightResult + pointLightResult;
+    vec3 finalColor = lightResult + pointLightResult + uMaterial.emission;
 
     FragColor = vec4(finalColor, 1.0);
 }
