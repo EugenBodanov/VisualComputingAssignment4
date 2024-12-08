@@ -1,6 +1,5 @@
 #version 330 core
 
-// Material with ambient, diffuse, specular, and shininess properties
 struct Material
 {
     vec3 diffuse;
@@ -15,9 +14,9 @@ struct Light
     vec3 lightPos;
     vec3 globalAmbientLightColor;
     vec3 lightColor;
-    float ka; // ambient coefficient
-    float kd; // diffuse coefficient
-    float ks; // specular coefficient
+    float ka;                       // ambient coefficient  [0, 1]
+    float kd;                       // diffuse coefficient  [0, 1]
+    float ks;                       // specular coefficient [0, 1]
 };
 
 // Structure for multiple point light sources with attenuation
@@ -33,33 +32,33 @@ struct PointLight {
     float angle;
 };
 
-// Uniforms
 uniform Material uMaterial;
 uniform Light uLight;
+uniform vec3 uCameraPos; // camera position needed for specular computations
 
 uniform PointLight lights[6];
 uniform int numLights;
 
 in vec3 tNormal;
 in vec3 tFragPos;
-in vec3 tCameraPos; // camera position needed for specular computations
 
 out vec4 FragColor;
 
-// Function to compute directional/global light contribution (Blinn-Phong)
+
+// ----------------------- Function to calculate directional/global light (Blinn Phong) ----------------------- //
+// --- Code inspiration by https://learnopengl.com/Advanced-Lighting/Advanced-Lighting --- //
 vec3 directionalLight(vec3 normal, vec3 lightPos) {
     vec3 lightDir = normalize(lightPos - tFragPos);
-    vec3 viewDir = normalize(tCameraPos - tFragPos);
+    vec3 viewDir = normalize(uCameraPos - tFragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
 
-    // Ambient component
+    // Ambient Component: ojects always get some color from surrounding light sources
     vec3 ambientComponent = uLight.ka * uMaterial.ambient * uLight.globalAmbientLightColor;
 
-    // Diffuse component
-    float diffFactor = max(dot(normal, lightDir), 0.0);
-    vec3 diffuseComponent = uLight.kd * uMaterial.diffuse * uLight.lightColor * diffFactor;
+    // Diffuse Component: The more a part of an object faces the light source the brihter it gets
+    vec3 diffuseComponent = uLight.kd * uMaterial.diffuse * uLight.lightColor * dot(normal, lightDir);
 
-    // Specular component (Blinn-Phong)
+    // Specular component
     float specFactor = pow(max(dot(normal, halfwayDir), 0.0), uMaterial.shininess);
     vec3 specularComponent = uLight.ks * uMaterial.specular * uLight.lightColor * specFactor;
 
