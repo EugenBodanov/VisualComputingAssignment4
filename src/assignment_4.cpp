@@ -360,6 +360,19 @@ void renderPlanetAndPlane(ShaderProgram& shader, bool renderNormal) {
         shaderUniform(shader, "uLight.ka", light.ka);
         shaderUniform(shader, "uLight.kd", light.kd);
         shaderUniform(shader, "uLight.ks", light.ks);
+
+        shaderUniform(shader, "numLights", (int)planeLights.size());
+        for (int i = 0; i < (int)planeLights.size(); ++i) {
+            std::string base = "lights[" + std::to_string(i) + "]";
+            shaderUniform(shader, (base + ".position").c_str(), planeLights[i].position);
+            shaderUniform(shader, (base + ".color").c_str(), planeLights[i].color);
+            shaderUniform(shader, (base + ".intensity").c_str(), planeLights[i].intensity);
+            shaderUniform(shader, (base + ".constant").c_str(), planeLights[i].constant);
+            shaderUniform(shader, (base + ".linear").c_str(), planeLights[i].linear);
+            shaderUniform(shader, (base + ".quadratic").c_str(), planeLights[i].quadratic);
+            shaderUniform(shader, (base + ".direction").c_str(), planeLights[i].direction);
+            shaderUniform(shader, (base + ".angle").c_str(), planeLights[i].angle);
+        }
     }
 
     /* Render plane */
@@ -429,6 +442,19 @@ void renderFlag(ShaderProgram& shader, bool renderNormal) {
         shaderUniform(shader, "uLight.ka", light.ka);
         shaderUniform(shader, "uLight.kd", light.kd);
         shaderUniform(shader, "uLight.ks", light.ks);
+
+        shaderUniform(shader, "numLights", (int)planeLights.size());
+        for (int i = 0; i < (int)planeLights.size(); ++i) {
+            std::string base = "lights[" + std::to_string(i) + "]";
+            shaderUniform(shader, (base + ".position").c_str(), planeLights[i].position);
+            shaderUniform(shader, (base + ".color").c_str(), planeLights[i].color);
+            shaderUniform(shader, (base + ".intensity").c_str(), planeLights[i].intensity);
+            shaderUniform(shader, (base + ".constant").c_str(), planeLights[i].constant);
+            shaderUniform(shader, (base + ".linear").c_str(), planeLights[i].linear);
+            shaderUniform(shader, (base + ".quadratic").c_str(), planeLights[i].quadratic);
+            shaderUniform(shader, (base + ".direction").c_str(), planeLights[i].direction);
+            shaderUniform(shader, (base + ".angle").c_str(), planeLights[i].angle);
+        }
     }
 
     glBindVertexArray(sScene.plane.flag.model.mesh.vao);
@@ -474,40 +500,8 @@ void renderColor(bool renderNormal) {
         shaderFlag = sScene.shaderFlagColor;
     }
 
-    glUseProgram(shaderScene.id);
-    // Give data about lights
-    shaderUniform(shaderScene, "numLights", (int)planeLights.size());
-    for (int i = 0; i < (int)planeLights.size(); ++i) {
-        std::string base = "lights[" + std::to_string(i) + "]";
-        shaderUniform(shaderScene, (base + ".position").c_str(), planeLights[i].position);
-        shaderUniform(shaderScene, (base + ".color").c_str(), planeLights[i].color);
-        shaderUniform(shaderScene, (base + ".intensity").c_str(), planeLights[i].intensity);
-        shaderUniform(shaderScene, (base + ".constant").c_str(), planeLights[i].constant);
-        shaderUniform(shaderScene, (base + ".linear").c_str(), planeLights[i].linear);
-        shaderUniform(shaderScene, (base + ".quadratic").c_str(), planeLights[i].quadratic);
-        shaderUniform(shaderScene, (base + ".direction").c_str(), planeLights[i].direction);
-        shaderUniform(shaderScene, (base + ".angle").c_str(), planeLights[i].angle);
-    }
-
     renderPlanetAndPlane(shaderScene, renderNormal);
-
-    glUseProgram(shaderFlag.id);
-    shaderUniform(shaderFlag, "numLights", (int)planeLights.size());
-    for (int i = 0; i < (int)planeLights.size(); ++i) {
-        std::string base = "lights[" + std::to_string(i) + "]";
-        shaderUniform(shaderFlag, (base + ".position").c_str(), planeLights[i].position);
-        shaderUniform(shaderFlag, (base + ".color").c_str(), planeLights[i].color);
-        shaderUniform(shaderFlag, (base + ".intensity").c_str(), planeLights[i].intensity);
-        shaderUniform(shaderFlag, (base + ".constant").c_str(), planeLights[i].constant);
-        shaderUniform(shaderFlag, (base + ".linear").c_str(), planeLights[i].linear);
-        shaderUniform(shaderFlag, (base + ".quadratic").c_str(), planeLights[i].quadratic);
-        shaderUniform(shaderFlag, (base + ".direction").c_str(), planeLights[i].direction);
-        shaderUniform(shaderFlag, (base + ".angle").c_str(), planeLights[i].angle);
-    }
-
     renderFlag(shaderFlag, renderNormal);
-
-    glUseProgram(0);
 }
 
 /* function to draw all objects in the scene */
