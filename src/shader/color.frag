@@ -21,7 +21,7 @@ struct Light
 
 in vec3 tNormal;
 in vec3 tFragPos;
-in vec3 tCameraPos;
+uniform vec3 uCameraPos;
 out vec4 FragColor;
 
 uniform Material uMaterial;
@@ -31,7 +31,7 @@ uniform Light uLight;
 // --- Code inspiration by https://learnopengl.com/Advanced-Lighting/Advanced-Lighting --- //
 vec3 directionalLight(vec3 normal, vec3 lightPos) {
     vec3 lightDir = normalize(lightPos - tFragPos);
-    vec3 viewDir = normalize(tCameraPos - tFragPos);
+    vec3 viewDir = normalize(uCameraPos - tFragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
 
     // Ambient Component: ojects always get some color from surrounding light sources

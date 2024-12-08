@@ -7,17 +7,14 @@ layout(location = 2) in vec2 aUV;
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProj;
-uniform vec3 uCameraPos;
 
 
 out vec3 tNormal;
 out vec3 tFragPos;
-out vec3 tCameraPos;
 
 void main(void)
 {
     gl_Position = uProj * uView * uModel * vec4(aPosition, 1.0);
     tFragPos = vec3(uModel * vec4(aPosition, 1.0));
     tNormal = normalize(mat3(transpose(inverse(uModel))) * aNormal);
-    tCameraPos = uCameraPos;
 }

@@ -21,7 +21,6 @@ uniform float accumTime; // is updated within the main program!
 
 out vec3 tNormal;
 out vec3 tFragPos;
-out vec3 tCameraPos;
 
 
 float getDisplacement(vec2 pos) {
@@ -68,6 +67,5 @@ void main(void)
     tFragPos = vec3(uModel * vec4(modifiedPos, 1.0));
 
     tNormal = normalize(mat3(transpose(inverse(uModel))) * normal);
-    tCameraPos = uCameraPos;
 }
 
