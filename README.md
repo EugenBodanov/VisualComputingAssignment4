@@ -17,6 +17,7 @@ Here we develop code for the UIBK Bachelors seminar Visual Computing (WS2024/25)
 - Change Day to Night mode via \<m>
 - Toggle Render Mode via \<r>
 - '1' and '2' for selecting basic camera and additional third-person-camera
+- L to turn on/off the plane lights
 
 ### Steering
 

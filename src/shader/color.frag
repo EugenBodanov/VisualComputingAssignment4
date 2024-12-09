@@ -41,8 +41,6 @@ uniform bool planeLightsOn;
 uniform PointLight lights[6];
 uniform int numLights;
 
-uniform bool planeLightsOn; // mt
-
 in vec3 tNormal;
 in vec3 tFragPos;
 
@@ -102,7 +100,6 @@ void main(void)
                 vec3 diffuse = diff * lights[i].color * attenuation;
                 pointLightResult += diffuse * uMaterial.diffuse;
             }
-        }
     }
 
     // Combine directional light and point lights results
