@@ -36,6 +36,7 @@ struct PointLight {
 uniform Material uMaterial;
 uniform Light uLight;
 uniform vec3 uCameraPos; // camera position needed for specular computations
+uniform bool planeLightsOn;
 
 uniform PointLight lights[6];
 uniform int numLights;
@@ -75,24 +76,27 @@ void main(void)
 
     // 2) Compute the contribution from the point lights (diffuse only, as in the original code)
     vec3 pointLightResult = vec3(0.0);
-    for (int i = 0; i < numLights; i++)
-    {
-        vec3 fragToLight = normalize(lights[i].position - tFragPos);
+    
+    if (!planeLightsOn){
+        for (int i = 0; i < numLights; i++)
+        {
+            vec3 fragToLight = normalize(lights[i].position - tFragPos);
 
-        // Compute the cosine of the angle between the spotlight direction and the vector from the light to the fragment
-        float theta = dot(fragToLight, normalize(lights[i].direction));
-        float cosCutoff = cos(lights[i].angle);
+            // Compute the cosine of the angle between the spotlight direction and the vector from the light to the fragment
+            float theta = dot(fragToLight, normalize(lights[i].direction));
+            float cosCutoff = cos(lights[i].angle);
 
-        // Check if fragment is inside the spotlight cone
-        if (theta >= cosCutoff) {
-            // Fragment is inside the cone, calculate lighting as usual
-            float diff = max(dot(normal, fragToLight), 0.0);
+            // Check if fragment is inside the spotlight cone
+            if (theta >= cosCutoff) {
+                // Fragment is inside the cone, calculate lighting as usual
+                float diff = max(dot(normal, fragToLight), 0.0);
 
-            float distance = length(lights[i].position - tFragPos);
-            float attenuation = lights[i].intensity / (lights[i].constant + lights[i].linear * distance + lights[i].quadratic * distance * distance);
+                float distance = length(lights[i].position - tFragPos);
+                float attenuation = lights[i].intensity / (lights[i].constant + lights[i].linear * distance + lights[i].quadratic * distance * distance);
 
-            vec3 diffuse = diff * lights[i].color * attenuation;
-            pointLightResult += diffuse * uMaterial.diffuse;
+                vec3 diffuse = diff * lights[i].color * attenuation;
+                pointLightResult += diffuse * uMaterial.diffuse;
+            }
         }
     }
 

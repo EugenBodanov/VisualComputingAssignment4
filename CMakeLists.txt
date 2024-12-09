@@ -9,7 +9,7 @@
 #------------------------------------------#
 ############################################
 cmake_minimum_required( VERSION 3.5 )
-project( viscomp-assignment-4 )
+project(viscomp-assignment-4)
 
 message("\n * Assignment 4 - Visual Computing ")
 message(STATUS "${PROJECT_NAME} build environment --")
