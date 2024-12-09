@@ -40,6 +40,8 @@ uniform vec3 uCameraPos; // camera position needed for specular computations
 uniform PointLight lights[6];
 uniform int numLights;
 
+uniform bool planeLightsOn; // mt
+
 in vec3 tNormal;
 in vec3 tFragPos;
 
@@ -77,6 +79,13 @@ void main(void)
     vec3 pointLightResult = vec3(0.0);
     for (int i = 0; i < numLights; i++)
     {
+        //mt
+        // Check if the plane lights are on
+        if (!planeLightsOn) {
+            continue; // Skip the point light calculation if the lights are off
+        }
+        //mt
+
         vec3 fragToLight = normalize(lights[i].position - tFragPos);
 
         // Compute the cosine of the angle between the spotlight direction and the vector from the light to the fragment
