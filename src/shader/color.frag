@@ -79,12 +79,10 @@ void main(void)
     vec3 pointLightResult = vec3(0.0);
     for (int i = 0; i < numLights; i++)
     {
-        //mt
         // Check if the plane lights are on
         if (!planeLightsOn) {
             continue; // Skip the point light calculation if the lights are off
         }
-        //mt
 
         vec3 fragToLight = normalize(lights[i].position - tFragPos);
 

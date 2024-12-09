@@ -374,7 +374,7 @@ void renderPlanetAndPlane(ShaderProgram& shader, bool renderNormal) {
         shaderUniform(shader, "uLight.ka", light.ka);
         shaderUniform(shader, "uLight.kd", light.kd);
         shaderUniform(shader, "uLight.ks", light.ks);
-        shaderUniform(shader, "planeLightsOn", sScene.planeLightsOn); //mt
+        shaderUniform(shader, "planeLightsOn", sScene.planeLightsOn);
 
         shaderUniform(shader, "numLights", (int)planeLights.size());
         for (int i = 0; i < (int)planeLights.size(); ++i) {
