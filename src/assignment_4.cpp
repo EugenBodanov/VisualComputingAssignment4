@@ -277,6 +277,8 @@ void sceneInit(float width, float height)
     sScene.shaderFlagColor = shaderLoad("shader/flag.vert", "shader/color.frag");
     sScene.shaderFlagNormal = shaderLoad("shader/flag.vert", "shader/normal.frag");
 
+    sScene.planeLightsOn = true;
+
     sScene.renderMode = eRenderMode::COLOR;
 
     sScene.PlaneLightsTurnON = true;

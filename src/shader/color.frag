@@ -41,6 +41,8 @@ uniform bool planeLightsOn;
 uniform PointLight lights[6];
 uniform int numLights;
 
+uniform bool planeLightsOn; // mt
+
 in vec3 tNormal;
 in vec3 tFragPos;
 
@@ -76,11 +78,14 @@ void main(void)
 
     // 2) Compute the contribution from the point lights (diffuse only, as in the original code)
     vec3 pointLightResult = vec3(0.0);
-    
-    if (!planeLightsOn){
-        for (int i = 0; i < numLights; i++)
-        {
-            vec3 fragToLight = normalize(lights[i].position - tFragPos);
+    for (int i = 0; i < numLights; i++)
+    {
+        // Check if the plane lights are on
+        if (!planeLightsOn) {
+            continue; // Skip the point light calculation if the lights are off
+        }
+
+        vec3 fragToLight = normalize(lights[i].position - tFragPos);
 
             // Compute the cosine of the angle between the spotlight direction and the vector from the light to the fragment
             float theta = dot(fragToLight, normalize(lights[i].direction));
